@@ -1,0 +1,39 @@
+
+name: Generate Signing Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-key:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create JKS Keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+
+          if [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Keystore passwords are missing in GitHub Secrets."
+            exit 1
+          fi
+
+          keytool -genkey -v \
+            -keystore pattabaazi-key.jks \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -alias pattabaazi \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "CN=PattaBaazi, OU=App, O=RoyalClub, L=India, S=India, C=IN"
+
+      - name: Upload Keystore
+        uses: actions/upload-artifact@v4
+        with:
+          name: pattabaazi-signing-key
+          path: pattabaazi-key.jks
+          retention-days: 90
